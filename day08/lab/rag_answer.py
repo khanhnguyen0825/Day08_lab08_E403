@@ -238,13 +238,18 @@ def build_context_block(chunks: List[Dict[str, Any]]) -> str:
         meta = chunk.get("metadata", {})
         source = meta.get("source", "unknown")
         section = meta.get("section", "")
+        department = meta.get("department", "")
+        effective_date = meta.get("effective_date", "")
         score = chunk.get("score", 0)
         text = chunk.get("text", "")
 
-        # TODO: Tùy chỉnh format nếu muốn (thêm effective_date, department, ...)
         header = f"[{i}] {source}"
         if section:
             header += f" | {section}"
+        if department and department != "unknown":
+            header += f" | Dept: {department}"
+        if effective_date and effective_date != "unknown":
+            header += f" | Date: {effective_date}"
         if score > 0:
             header += f" | score={score:.2f}"
 
@@ -257,20 +262,23 @@ def build_grounded_prompt(query: str, context_block: str) -> str:
     """
     Xây dựng grounded prompt yêu cầu trích dẫn và trung thực (OpenAI optimized).
     """
-    prompt = f"""Bạn là trợ lý hỗ trợ nội bộ (CS & IT Helpdesk) chuyên nghiệp.
-Câu trả lời của bạn phải dựa TRỰC TIẾP và CHỈ dựa trên dữ liệu (context) được cung cấp.
+    prompt = f"""Bạn là chuyên gia hỗ trợ nội bộ (AI Helpdesk) chuyên nghiệp cho khối CS & IT.
+Nhiệm vụ của bạn là giải đáp thắc mắc của nhân viên dựa TRỰC TIẾP và CHỈ trên nền tảng dữ liệu (context) dưới đây.
 
-QUY TẮC PHẢN HỒI:
-1. TRÍCH DẪN: Luôn thêm [nguồn số] (ví dụ: [1], [2]) vào cuối mỗi ý lấy từ context.
-2. TRUNG THỰC: Nếu context không chứa câu trả lời, hãy nói: "Tôi xin lỗi, thông tin hiện tại không đủ để trả lời câu hỏi này." Tuyệt đối không tự bịa thông tin.
-3. NGÔN NGỮ: Phản hồi bằng tiếng Việt trang trọng, ngắn gọn.
+CÁC QUY TẮC BẮT BUỘC (CRITICAL RULES):
+1. TRÍCH DẪN RÕ RÀNG: Luôn gắn [số thứ tự nguồn] ngay sau đoạn thông tin hoặc từng ý (ví dụ: "...được xử lý trong 4 giờ [1].").
+2. ĐỊNH DẠNG CHUYÊN NGHIỆP: Ưu tiên trả lời bằng bullet points hoặc các đoạn ngắn gọn để dễ đọc.
+3. KHÔNG BỊA ĐẶT (ANTI-HALLUCINATION): Nếu câu hỏi vượt ngoài dữ liệu context, từ chối trả lời một cách lịch sự: "Tôi xin lỗi, thông tin hiện tại trong cơ sở dữ liệu không đủ để trả lời câu hỏi này." 
+4. THÔNG TIN NHẠY CẢM: Nếu người dùng hỏi về thông tin nhạy cảm bảo mật (như password, database admin credentials, hay root access), tuyệt đối từ chối và hướng dẫn: "Vui lòng tạo một ticket trên mục IT-ACCESS để nhóm bảo mật trực tiếp hướng dẫn quá trình này."
+5. BÁM SÁT NGÔN NGỮ: Sử dụng tiếng Việt chuẩn lịch sự, trang trọng.
 
-Câu hỏi: {query}
+Câu hỏi từ nhân viên: {query}
 
-Context:
+--- Context (Văn bản hỗ trợ đã tra cứu được) ---
 {context_block}
+--- Hết context ---
 
-Trả lời:"""
+Câu trả lời của AI Helpdesk:"""
     return prompt
 
 
