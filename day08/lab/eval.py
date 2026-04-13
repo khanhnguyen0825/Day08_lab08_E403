@@ -1,20 +1,6 @@
 """
 eval.py — Sprint 4: Evaluation & Scorecard
 ==========================================
-Mục tiêu Sprint 4 (60 phút):
-  - Chạy 10 test questions qua pipeline
-  - Chấm điểm theo 4 metrics: Faithfulness, Relevance, Context Recall, Completeness
-  - So sánh baseline vs variant
-  - Ghi kết quả ra scorecard
-
-Definition of Done Sprint 4:
-  ✓ Demo chạy end-to-end (index → retrieve → answer → score)
-  ✓ Scorecard trước và sau tuning
-  ✓ A/B comparison: baseline vs variant với giải thích vì sao variant tốt hơn
-
-A/B Rule (từ slide):
-  Chỉ đổi MỘT biến mỗi lần để biết điều gì thực sự tạo ra cải thiện.
-  Đổi đồng thời chunking + hybrid + rerank + prompt = không biết biến nào có tác dụng.
 """
 
 import json
@@ -128,23 +114,8 @@ def score_context_recall(
     expected_sources: List[str],
 ) -> Dict[str, Any]:
     """
-    Context Recall: Retriever có mang về đủ evidence cần thiết không?
-    Câu hỏi: Expected source có nằm trong retrieved chunks không?
-
-    Đây là metric đo retrieval quality, không phải generation quality.
-
-    Cách tính đơn giản:
-        recall = (số expected source được retrieve) / (tổng số expected sources)
-
-    Ví dụ:
-        expected_sources = ["policy/refund-v4.pdf", "sla-p1-2026.pdf"]
-        retrieved_sources = ["policy/refund-v4.pdf", "helpdesk-faq.md"]
-        recall = 1/2 = 0.5
-
-    TODO Sprint 4:
-    1. Lấy danh sách source từ chunks_used
-    2. Kiểm tra xem expected_sources có trong retrieved sources không
-    3. Tính recall score
+    Context Recall: Retriever có mang về đủ bằng chứng cần thiết không?
+    Dựa trên việc so sánh expected_sources với retrieved_sources.
     """
     if not expected_sources:
         # Câu hỏi không có expected source (ví dụ: "Không đủ dữ liệu" cases)
@@ -224,23 +195,6 @@ def run_scorecard(
 ) -> List[Dict[str, Any]]:
     """
     Chạy toàn bộ test questions qua pipeline và chấm điểm.
-
-    Args:
-        config: Pipeline config (retrieval_mode, top_k, use_rerank, ...)
-        test_questions: List câu hỏi (load từ JSON nếu None)
-        verbose: In kết quả từng câu
-
-    Returns:
-        List scorecard results, mỗi item là một row
-
-    TODO Sprint 4:
-    1. Load test_questions từ data/test_questions.json
-    2. Với mỗi câu hỏi:
-       a. Gọi rag_answer() với config tương ứng
-       b. Chấm 4 metrics
-       c. Lưu kết quả
-    3. Tính average scores
-    4. In bảng kết quả
     """
     if test_questions is None:
         with open(TEST_QUESTIONS_PATH, "r", encoding="utf-8") as f:
@@ -511,11 +465,3 @@ if __name__ == "__main__":
             variant_results,
             output_csv="ab_comparison.csv"
         )
-
-    print("\n\nViệc cần làm Sprint 4:")
-    print("  1. Hoàn thành Sprint 2 + 3 trước")
-    print("  2. Chấm điểm thủ công hoặc implement LLM-as-Judge trong score_* functions")
-    print("  3. Chạy run_scorecard(BASELINE_CONFIG)")
-    print("  4. Chạy run_scorecard(VARIANT_CONFIG)")
-    print("  5. Gọi compare_ab() để thấy delta")
-    print("  6. Cập nhật docs/tuning-log.md với kết quả và nhận xét")
